@@ -40,13 +40,22 @@ def print_list(script_list):
 
 def main():
     while True:
-        print_list(_script_lists())
-        menu = int(input("Введите пункт меню: "))
-        if menu > 0 and menu < len(_script_lists()):
+        scripts = _script_lists()
+        print_list(scripts)
+        try:
+            menu = int(input("Введите пункт меню: "))
+        except ValueError:
+            print("Введите число")
+            continue
+        except KeyboardInterrupt:
+            print("\nЗавершение работы")
+            sys.exit(0)
+
+        if len(scripts) > menu >= 0:
             if menu == 0: sys.exit(0)
-            else: _select_script(menu, _script_lists())
+            _select_script(menu, scripts)
         else:
-            print("Введен не верные пункт меню")
+            print(f"Ошибка: введите число от 0 до {len(scripts) - 1}")
             continue
 
 main()
