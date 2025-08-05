@@ -1,7 +1,6 @@
 import os
 import sys
 
-
 class Config:
     _SCRIPT_FOLDER = os.path.join(r"\\nas\Distrib\script\.manual_scripts")
 
