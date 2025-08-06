@@ -2,8 +2,9 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QVBoxLayout, QLabel, QListWidget, QPushButton
 )
+from PySide6.QtGui import QShortcut
 import sys
-from logic import script_lists, start_script
+from logic import get_script_lists, start_script
 
 
 class ScriptManager(QMainWindow):
@@ -15,8 +16,8 @@ class ScriptManager(QMainWindow):
 
         self.list_widget = None
         self.button = None
-        self.status_bar = None
-
+        self.status_bar = self.statusBar()
+        self.setup_shortcuts()
         self.setup_ui()
 
     def setup_ui(self):
@@ -37,11 +38,10 @@ class ScriptManager(QMainWindow):
         # Поле, где будет список скриптов
         self.list_widget = QListWidget()
         layout.addWidget(self.list_widget)
+        self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
 
         # Загружаем скрипты
-        scripts = script_lists()
-        self.list_widget.addItems(scripts)
-        self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
+        self.load_scripts()
 
         # Кнопка запуска скрипта
         self.button = QPushButton("Запустить")
@@ -50,7 +50,6 @@ class ScriptManager(QMainWindow):
         layout.addWidget(self.button)
 
         # Статус бар
-        self.status_bar = self.statusBar()
         self.status_bar.setSizeGripEnabled(True)
         self.status_bar.setStyleSheet("QStatusBar{background-color:rgb(0, 0, 0)}")
         self.status_bar.showMessage("Готово")
@@ -60,11 +59,36 @@ class ScriptManager(QMainWindow):
 
     def on_button_clicked(self):
         selection = self.list_widget.selectedItems()
-        if selection:
-            self.status_bar.showMessage(f"Выбран {selection[0].text()}")
-        else:
-            self.status_bar.showMessage("Готово ")
+        if not selection:
+            self.status_bar.showMessage("Скрипт не выбран")
+            return
 
+        script_name = selection[0].text()
+        self.button.setEnabled(False)
+        self.status_bar.showMessage(f"Запуск {script_name}")
+
+        start_script(script_name)
+        self.status_bar.showMessage(f"Скрипт {script_name} запущен ")
+        self.button.setEnabled(True)
+
+
+    def load_scripts(self):
+        """Загружает список скриптов"""
+        self.list_widget.clear()
+        try:
+            scripts = get_script_lists()
+            if scripts:
+                self.list_widget.addItems(scripts)
+                self.status_bar.showMessage(f"Загружено {len(scripts)} скриптов")
+            else:
+                self.status_bar.showMessage("Нет доступных скриптов")
+        except Exception as e:
+            self.status_bar.showMessage(f"Ошибка загрузки: {str(e)}")
+
+    def setup_shortcuts(self):
+        """Настройка горячих клавиш"""
+        refresh = QShortcut("F5", self)
+        refresh.activated.connect(self.load_scripts)
 
 # Основное окно
 if __name__ == "__main__":
