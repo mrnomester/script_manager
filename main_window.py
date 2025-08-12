@@ -14,7 +14,7 @@ class ScriptManager(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Script Manager")
-        self.resize(350, 600)
+        self.resize(400, 600)
         self.setStyleSheet("""
             QMainWindow {background: #23272e;}
             QLabel {color: #e0e0e0;}
