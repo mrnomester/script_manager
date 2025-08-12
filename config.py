@@ -35,10 +35,14 @@ class Config:
     def validate_path(cls):
         cls.load_settings()
         if not os.path.isdir(cls._SCRIPT_FOLDER):
-            print(f"Нет доступа до папки")
-            sys.exit(1)
+            raise FileNotFoundError("Нет доступа до папки")
 
     @classmethod
     def get_script_folder(cls):
         cls.load_settings()
         return cls._SCRIPT_FOLDER
+
+    @classmethod
+    def is_folder_available(cls):
+        cls.load_settings()
+        return os.path.isdir(cls._SCRIPT_FOLDER)

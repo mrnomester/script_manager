@@ -4,7 +4,6 @@ import os
 import subprocess
 from config import Config
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 Config.validate_path()
 
 def get_script_lists():
@@ -13,7 +12,7 @@ def get_script_lists():
     for file in os.listdir(Config.get_script_folder()):
         if file.endswith(".ps1") or file.endswith(".bat"):
             script_list.append(file)
-    return script_list
+    return sorted(script_list)
 
 def get_script_path(script_name):
     """Создает полный путь до скрипта"""
