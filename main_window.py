@@ -1,61 +1,81 @@
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
-    QVBoxLayout, QLabel, QListWidget, QPushButton
+    QVBoxLayout, QLabel, QListWidget, QPushButton, QHBoxLayout,
+    QMenuBar, QMenu, QFileDialog, QMessageBox
 )
-from PySide6.QtGui import QShortcut
+from PySide6.QtGui import QShortcut, QFont, QIcon
+from PySide6.QtCore import Qt
 import sys
 from logic import get_script_lists, start_script
+from config import Config
 
 
 class ScriptManager(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Script Manager")
-        #self.setWindowIcon(QIcon("icon.ico"))
-        self.resize(500, 600)
+        self.resize(350, 600)
+        self.setStyleSheet("""
+            QMainWindow {background: #23272e;}
+            QLabel {color: #e0e0e0;}
+            QListWidget {background: #181a20; color: #e0e0e0; border-radius: 6px;}
+            QPushButton {background: #2d313a; color: #e0e0e0; border-radius: 6px; padding: 6px;}
+            QPushButton:disabled {background: #444;}
+            QStatusBar{background-color:#181a20; color:#e0e0e0;}
+        """)
 
         self.list_widget = None
-        self.button = None
+        self.button_run = None
+        self.button_refresh = None
         self.status_bar = self.statusBar()
-        self.setup_shortcuts()
+        self.setup_menu()
         self.setup_ui()
+        self.setup_shortcuts()
+        self.load_scripts()
+
+    def setup_menu(self):
+        menu_bar = QMenuBar(self)
+        settings_menu = QMenu("Настройки", self)
+        select_folder_action = settings_menu.addAction("Выбрать папку скриптов")
+        select_folder_action.triggered.connect(self.select_script_folder)
+        menu_bar.addMenu(settings_menu)
+        self.setMenuBar(menu_bar)
 
     def setup_ui(self):
-        # Центральный виджет
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        #Лэйауты
-        layout = QVBoxLayout()
-        central_widget.setLayout(layout)
-        layout.setContentsMargins(10, 10, 10, 10)  # Отступы: лево, верх, право, низ
-        layout.setSpacing(10)  # Расстояние между элементами
+        main_layout = QVBoxLayout()
+        central_widget.setLayout(main_layout)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(16)
 
-        # Подпись в лэайаут скриптов
-        label = QLabel("Скрипты:")
-        layout.addWidget(label)
+        label = QLabel("Список скриптов")
+        label.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        main_layout.addWidget(label)
 
-        # Поле, где будет список скриптов
         self.list_widget = QListWidget()
-        layout.addWidget(self.list_widget)
+        self.list_widget.setFont(QFont("Consolas", 11))
+        main_layout.addWidget(self.list_widget)
         self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
 
-        # Загружаем скрипты
-        self.load_scripts()
+        btn_layout = QHBoxLayout()
+        self.button_run = QPushButton(QIcon(), "Запустить")
+        self.button_run.setEnabled(False)
+        self.button_run.clicked.connect(self.on_button_clicked)
+        btn_layout.addWidget(self.button_run)
 
-        # Кнопка запуска скрипта
-        self.button = QPushButton("Запустить")
-        self.button.clicked.connect(self.on_button_clicked)
-        self.button.setEnabled(False)
-        layout.addWidget(self.button)
+        self.button_refresh = QPushButton(QIcon(), "Обновить")
+        self.button_refresh.clicked.connect(self.load_scripts)
+        btn_layout.addWidget(self.button_refresh)
 
-        # Статус бар
-        self.status_bar.setSizeGripEnabled(True)
-        self.status_bar.setStyleSheet("QStatusBar{background-color:rgb(0, 0, 0)}")
+        main_layout.addLayout(btn_layout)
+
+        self.status_bar.setSizeGripEnabled(False)
         self.status_bar.showMessage("Готово")
 
     def on_selection_changed(self):
-        self.button.setEnabled(len(self.list_widget.selectedItems()) > 0)
+        self.button_run.setEnabled(len(self.list_widget.selectedItems()) > 0)
 
     def on_button_clicked(self):
         selection = self.list_widget.selectedItems()
@@ -64,16 +84,13 @@ class ScriptManager(QMainWindow):
             return
 
         script_name = selection[0].text()
-        self.button.setEnabled(False)
+        self.button_run.setEnabled(False)
         self.status_bar.showMessage(f"Запуск {script_name}")
-
         start_script(script_name)
-        self.status_bar.showMessage(f"Скрипт {script_name} запущен ")
-        self.button.setEnabled(True)
-
+        self.status_bar.showMessage(f"Скрипт {script_name} запущен")
+        self.button_run.setEnabled(True)
 
     def load_scripts(self):
-        """Загружает список скриптов"""
         self.list_widget.clear()
         try:
             scripts = get_script_lists()
@@ -85,8 +102,14 @@ class ScriptManager(QMainWindow):
         except Exception as e:
             self.status_bar.showMessage(f"Ошибка загрузки: {str(e)}")
 
+    def select_script_folder(self):
+        folder = QFileDialog.getExistingDirectory(self, "Выберите папку со скриптами", Config.get_script_folder())
+        if folder:
+            Config.set_script_folder(folder)
+            QMessageBox.information(self, "Папка изменена", "Папка скриптов успешно изменена.\nОбновите список скриптов.")
+            self.status_bar.showMessage("Папка скриптов изменена")
+
     def setup_shortcuts(self):
-        """Настройка горячих клавиш"""
         refresh = QShortcut("F5", self)
         refresh.activated.connect(self.load_scripts)
 
